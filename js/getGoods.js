@@ -1,20 +1,91 @@
 const getGoods = () => {
-    const links = document.querySelectorAll('.navigation-link');
+    const links = document.querySelectorAll('.navigation-link'); //ссылки навигации
+    const viewAll = document.querySelector('.more');//кнопка "показать все"
 
-    const getData = () => {
+    /**
+     * Функция отрисовки карточки
+     * @param {object} goods
+     */
+    const renderGoods = (goods) => {
+        const goodsContainer = document.querySelector('.long-goods-list');
+
+        goodsContainer.innerHTML = "";
+
+        /**
+         * Функция содержимого карточки
+         */
+        goods.forEach(good => {
+            const goodBlock = document.createElement('div');
+
+            goodBlock.classList.add('col-lg-3')
+            goodBlock.classList.add('col-sm-6')
+
+            goodBlock.innerHTML = `
+                <div class="goods-card">
+                    <span class="label ${good.label ? null : 'd-none'}">${good.label}</span>
+                    <img src="db/${good.img}" alt="${good.name}"
+                        class="goods-image">
+                    <h3 class="goods-title">${good.name}</h3>
+                    <p class="goods-description">${good.description}</p>
+                    <button class="button goods-card-btn add-to-cart" data-id="${good.id}">
+                        <span class="button-price">$ ${good.price}</span>
+                    </button>
+                </div>
+            `
+            goodsContainer.append(goodBlock)
+        })
+    }
+
+    /**
+     * Функция  получения данных из сервера
+     * @param {String} value
+     * @param {String} category
+     */
+    const getData = (value, category) => {
         fetch('/db/db.json')
             .then((res) => res.json())
             .then((data) => {
-                localStorage.setItem('goods', JSON.stringify(data));
+                const array = category ? data.filter((item) => item[category] === value) : data;
+
+                localStorage.setItem('goods', JSON.stringify(array));
+
+                if (window.location.pathname !== '/goods.html') {
+                    window.location.href = '/goods.html'
+                } else {
+                    renderGoods(array)
+                }
             })
     }
 
+    /**
+     * Перебор ссылок навигационного меню, передача в них данных
+     */
     links.forEach((link) => {
         link.addEventListener('click', (event) => {
             event.preventDefault();
-            getData();
+
+            const linkValue = link.textContent;
+            const category = link.dataset.field;
+
+            getData(linkValue, category);
         })
     })
+
+    /**
+     * Переход по кнопке "посмотреть все" и отрисовка контента
+     */
+    viewAll.addEventListener('click', (event) => {
+        event.preventDefault();
+
+        getData();
+    })
+
+    /**
+     * Проверка наличия данных
+     */
+    if (localStorage.getItem('goods') && window.location.pathname === '/goods.html') {
+        renderGoods(JSON.parse(localStorage.getItem('goods')))
+    }
 }
 
 getGoods()
